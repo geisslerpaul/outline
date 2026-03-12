@@ -131,6 +131,7 @@ export class Mailer {
    */
   sendMail = async (data: SendMailOptions): Promise<void> => {
     const transporter = this.transporter;
+    const isResendTransport = !!env.RESEND_API_KEY;
 
     if (env.isDevelopment) {
       Logger.debug(
@@ -184,7 +185,10 @@ export class Mailer {
               },
             }
           : undefined,
-        attachments: env.isCloudHosted
+        // Resend transport only supports attachments provided as `content`
+        // (Buffer/string). Outline uses `path` for local attachments, so avoid
+        // attaching files when using Resend.
+        attachments: isResendTransport || env.isCloudHosted
           ? undefined
           : [
               {

@@ -217,6 +217,40 @@ export default class DocumentsStore extends Store<Document> {
     return this.drafts().length;
   }
 
+  @action
+  generateTldr = async (
+    document: Document,
+    options?: {
+      forceRegenerate?: boolean;
+      maxLength?: number;
+    }
+  ): Promise<void> => {
+    if (!env.AI_TLDR_ENABLED) {
+      return;
+    }
+
+    document.isGeneratingTldr = true;
+
+    try {
+      const res = await client.post("/documents.tldr", {
+        id: document.id,
+        forceRegenerate: options?.forceRegenerate,
+        maxLength: options?.maxLength,
+      });
+
+      invariant(res?.data, "TL;DR response should be available");
+
+      runInAction("DocumentsStore#generateTldr", () => {
+        document.summary = res.data.summary;
+        this.addPolicies(res.policies);
+      });
+    } finally {
+      runInAction("DocumentsStore#generateTldr:finally", () => {
+        document.isGeneratingTldr = false;
+      });
+    }
+  };
+
   drafts = (
     options: PaginationParams & {
       dateFilter?: DateFilter;

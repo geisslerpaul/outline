@@ -132,6 +132,13 @@ export default class Document extends ArchivableModel implements Searchable {
   @observable
   title: string;
 
+  /**
+   * Short summary of the document content.
+   */
+  @Field
+  @observable
+  summary?: string;
+
   /** The likely language of the document, in ISO 639-1 format.  */
   language: string | undefined;
 
@@ -197,6 +204,9 @@ export default class Document extends ArchivableModel implements Searchable {
 
   @observable
   popularityScore: number;
+
+  @observable
+  isGeneratingTldr = false;
 
   /**
    * @deprecated Use path instead

@@ -30,6 +30,7 @@ import { useLocationSidebarContext } from "~/hooks/useLocationSidebarContext";
 import useMobile from "~/hooks/useMobile";
 import usePolicy from "~/hooks/usePolicy";
 import useStores from "~/hooks/useStores";
+import env from "~/env";
 import DocumentMenu from "~/menus/DocumentMenu";
 import NewChildDocumentMenu from "~/menus/NewChildDocumentMenu";
 import TableOfContentsMenu from "~/menus/TableOfContentsMenu";
@@ -73,7 +74,7 @@ function DocumentHeader({
   onSave,
 }: Props) {
   const { t } = useTranslation();
-  const { ui } = useStores();
+  const { ui, documents } = useStores();
   const theme = useTheme();
   const team = useCurrentTeam({ rejectOnEmpty: false });
   const user = useCurrentUser({ rejectOnEmpty: false });
@@ -336,6 +337,21 @@ function DocumentHeader({
                 >
                   {t("Publish")}…
                 </Button>
+              </Action>
+            )}
+            {env.AI_TLDR_ENABLED && !isDeleted && !isRevision && can.read && (
+              <Action>
+                <Tooltip content={t("Generate TL;DR")} placement="bottom">
+                  <Button
+                    onClick={() => void documents.generateTldr(document)}
+                    disabled={document.isGeneratingTldr}
+                    neutral
+                  >
+                    {document.isGeneratingTldr
+                      ? t("Generating…")
+                      : t("Generate TL;DR")}
+                  </Button>
+                </Tooltip>
               </Action>
             )}
             {!isDeleted && <Separator />}

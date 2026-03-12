@@ -88,6 +88,7 @@ import ZipHelper from "@server/utils/ZipHelper";
 import { convertBareUrlsToEmbedMarkdown } from "@server/utils/embeds";
 import { getTeamFromContext } from "@server/utils/passport";
 import { assertPresent } from "@server/validation";
+import { TldrService } from "@server/services/ai/TldrService";
 import pagination from "../middlewares/pagination";
 import * as T from "./schema";
 import {
@@ -615,6 +616,57 @@ router.post(
             }
           : serializedDocument,
       policies: isPublic ? undefined : presentPolicies(user, [document]),
+    };
+  }
+);
+
+router.post(
+  "documents.tldr",
+  rateLimiter(RateLimiterStrategy.TenPerMinute),
+  auth(),
+  validate(T.DocumentsTldrSchema),
+  async (ctx: APIContext<T.DocumentsTldrReq>) => {
+    const { id, forceRegenerate, maxLength } = ctx.input.body;
+    const { user } = ctx.state.auth;
+
+    const document = await Document.findByPk(id, {
+      userId: user.id,
+      rejectOnEmpty: true,
+    });
+
+    authorize(user, "read", document);
+
+    if (!forceRegenerate && document.summary) {
+      ctx.body = {
+        data: {
+          id: document.id,
+          summary: document.summary,
+        },
+        policies: presentPolicies(user, [document]),
+      };
+      return;
+    }
+
+    const plainText = DocumentHelper.toPlainText(document);
+
+    if (!plainText.trim()) {
+      throw ValidationError("Cannot generate a summary for an empty document");
+    }
+
+    const summary = await TldrService.generateTldr({
+      text: plainText,
+      maxLength,
+    });
+
+    document.summary = summary;
+    await document.save();
+
+    ctx.body = {
+      data: {
+        id: document.id,
+        summary,
+      },
+      policies: presentPolicies(user, [document]),
     };
   }
 );

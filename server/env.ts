@@ -397,6 +397,32 @@ export class Environment {
     this.isDevelopment;
 
   /**
+   * API key used for generating AI-powered TL;DR summaries.
+   */
+  @IsOptional()
+  public AI_TLDR_API_KEY = this.toOptionalString(environment.AI_TLDR_API_KEY);
+
+  /**
+   * Name of the AI provider used for TL;DR summaries.
+   */
+  @IsOptional()
+  public AI_TLDR_PROVIDER = this.toOptionalString(
+    environment.AI_TLDR_PROVIDER
+  );
+
+  /**
+   * Model identifier used for TL;DR generation.
+   */
+  @IsOptional()
+  public AI_TLDR_MODEL = this.toOptionalString(environment.AI_TLDR_MODEL);
+
+  /**
+   * Whether AI TL;DR summaries are enabled.
+   */
+  @Public
+  public AI_TLDR_ENABLED = !!this.AI_TLDR_API_KEY;
+
+  /**
    * Optional hostname of the client, used for identifying to the server
    * defaults to hostname of the machine.
    */

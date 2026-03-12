@@ -584,6 +584,13 @@ class DocumentScene extends React.Component<Props> {
                     <>
                       <Notices document={document} readOnly={readOnly} />
 
+                      {document.summary && (
+                        <TldrContainer>
+                          <TldrTitle>TL;DR</TldrTitle>
+                          <TldrBody>{document.summary}</TldrBody>
+                        </TldrContainer>
+                      )}
+
                       {showContents && (
                         <PrintContentsContainer>
                           <Contents />
@@ -703,6 +710,30 @@ const PrintContentsContainer = styled.div`
   @media print {
     display: block;
   }
+`;
+
+const TldrContainer = styled.div`
+  margin: 12px 0 24px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: ${s("backgroundSecondary")};
+  color: ${s("text")};
+`;
+
+const TldrTitle = styled.h3`
+  margin: 0 0 4px;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: ${s("textSecondary")};
+`;
+
+const TldrBody = styled.p`
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: pre-wrap;
 `;
 
 type EditorContainerProps = {

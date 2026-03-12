@@ -27,6 +27,7 @@ import { RelationshipType } from "@server/models/Relationship";
 import { DocumentHelper } from "@server/models/helpers/DocumentHelper";
 import DocumentImportTask from "@server/queues/tasks/DocumentImportTask";
 import FileStorage from "@server/storage/files";
+import { TldrService } from "@server/services/ai/TldrService";
 import {
   buildShare,
   buildCollection,
@@ -42,6 +43,8 @@ import {
 import { getTestServer, withAPIContext } from "@server/test/support";
 
 const server = getTestServer();
+
+jest.mock("@server/services/ai/TldrService");
 
 beforeEach(async () => {
   await buildDocument();
@@ -2505,6 +2508,54 @@ describe("#documents.deleted", () => {
   it("should require authentication", async () => {
     const res = await server.post("/api/documents.deleted");
     expect(res.status).toEqual(401);
+  });
+});
+
+describe("#documents.tldr", () => {
+  it("should return cached summary when present", async () => {
+    const user = await buildUser();
+    const document = await buildDocument({
+      userId: user.id,
+      teamId: user.teamId,
+    });
+    document.summary = "Existing summary";
+    await document.save();
+
+    const res = await server.post("/api/documents.tldr", {
+      body: {
+        token: user.getJwtToken(),
+        id: document.id,
+      },
+    });
+
+    const body = await res.json();
+    expect(res.status).toEqual(200);
+    expect(body.data.summary).toEqual("Existing summary");
+  });
+
+  it("should call TldrService when forceRegenerate is true", async () => {
+    const user = await buildUser();
+    const document = await buildDocument({
+      userId: user.id,
+      teamId: user.teamId,
+    });
+    const generateTldrMock = TldrService
+      .generateTldr as jest.MockedFunction<typeof TldrService.generateTldr>;
+
+    generateTldrMock.mockResolvedValueOnce("New summary");
+
+    const res = await server.post("/api/documents.tldr", {
+      body: {
+        token: user.getJwtToken(),
+        id: document.id,
+        forceRegenerate: true,
+      },
+    });
+
+    const body = await res.json();
+    expect(res.status).toEqual(200);
+    expect(generateTldrMock).toHaveBeenCalled();
+    expect(body.data.summary).toEqual("New summary");
   });
 });
 

@@ -211,6 +211,21 @@ export type DocumentsSearchTitlesReq = z.infer<
   typeof DocumentsSearchTitlesSchema
 >;
 
+export const DocumentsTldrSchema = BaseSchema.extend({
+  body: z.object({
+    /** Id of the document to summarize */
+    id: zodIdType(),
+
+    /** Whether to ignore cached summaries and force regeneration */
+    forceRegenerate: z.boolean().optional(),
+
+    /** Optional maximum length hint for the generated summary */
+    maxLength: z.number().int().positive().max(4000).optional(),
+  }),
+});
+
+export type DocumentsTldrReq = z.infer<typeof DocumentsTldrSchema>;
+
 export const DocumentsDuplicateSchema = BaseSchema.extend({
   body: BaseIdSchema.extend({
     /** New document title */

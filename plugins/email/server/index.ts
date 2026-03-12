@@ -3,7 +3,9 @@ import { Hook, PluginManager } from "@server/utils/PluginManager";
 import config from "../plugin.json";
 import router from "./auth/email";
 
-const enabled = !!(env.SMTP_HOST || env.SMTP_SERVICE) || env.isDevelopment;
+const enabled =
+  !!(env.SMTP_HOST || env.SMTP_SERVICE || env.RESEND_API_KEY) ||
+  env.isDevelopment;
 
 if (enabled) {
   PluginManager.add({

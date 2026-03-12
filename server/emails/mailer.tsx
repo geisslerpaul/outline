@@ -132,6 +132,11 @@ export class Mailer {
   sendMail = async (data: SendMailOptions): Promise<void> => {
     const transporter = this.transporter;
     const isResendTransport = !!env.RESEND_API_KEY;
+    const from = isResendTransport
+      ? data.from.name
+        ? `${data.from.name} <${data.from.address}>`
+        : data.from.address
+      : data.from;
 
     if (env.isDevelopment) {
       Logger.debug(
@@ -168,7 +173,7 @@ export class Mailer {
       Logger.info("email", `Sending email "${data.subject}" to ${data.to}`);
 
       const info = await transporter.sendMail({
-        from: data.from,
+        from,
         replyTo: data.replyTo ?? env.SMTP_REPLY_EMAIL ?? env.SMTP_FROM_EMAIL,
         to: data.to,
         messageId: data.messageId,

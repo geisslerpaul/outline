@@ -1,9 +1,25 @@
 ARG APP_PATH=/opt/outline
-ARG BASE_IMAGE=outlinewiki/outline-base
-FROM ${BASE_IMAGE} AS base
+
+# Build Outline from this repository (do not use outlinewiki/outline-base,
+# otherwise custom changes in this repo won't be included in the image).
+FROM node:22.21.0-slim AS builder
 
 ARG APP_PATH
 WORKDIR $APP_PATH
+
+ENV NODE_ENV=production
+
+# Enable Yarn via Corepack (repo uses Yarn Berry)
+RUN corepack enable
+
+# Install dependencies first for better layer caching
+COPY package.json yarn.lock .yarnrc.yml ./
+COPY .yarn/ ./.yarn/
+RUN yarn install --immutable
+
+# Copy the rest of the repo and build
+COPY . .
+RUN yarn build
 
 # ---
 FROM node:22.21.0-slim AS runner
@@ -21,12 +37,12 @@ RUN addgroup --gid 1001 nodejs && \
     chown -R nodejs:nodejs /var/lib/outline && \
     chown -R nodejs:nodejs $APP_PATH
 
-COPY --from=base --chown=nodejs:nodejs $APP_PATH/build ./build
-COPY --from=base --chown=nodejs:nodejs $APP_PATH/server ./server
-COPY --from=base --chown=nodejs:nodejs $APP_PATH/public ./public
-COPY --from=base --chown=nodejs:nodejs $APP_PATH/.sequelizerc ./.sequelizerc
-COPY --from=base --chown=nodejs:nodejs $APP_PATH/node_modules ./node_modules
-COPY --from=base --chown=nodejs:nodejs $APP_PATH/package.json ./package.json
+COPY --from=builder --chown=nodejs:nodejs $APP_PATH/build ./build
+COPY --from=builder --chown=nodejs:nodejs $APP_PATH/server ./server
+COPY --from=builder --chown=nodejs:nodejs $APP_PATH/public ./public
+COPY --from=builder --chown=nodejs:nodejs $APP_PATH/.sequelizerc ./.sequelizerc
+COPY --from=builder --chown=nodejs:nodejs $APP_PATH/node_modules ./node_modules
+COPY --from=builder --chown=nodejs:nodejs $APP_PATH/package.json ./package.json
 # Install wget to healthcheck the server
 RUN  apt-get update \
     && apt-get install -y wget \

@@ -382,11 +382,6 @@ export class Environment {
   @IsInCaseInsensitive(Object.keys(wellKnownServices))
   public SMTP_SERVICE = this.toOptionalString(environment.SMTP_SERVICE);
 
-  @Public
-  public EMAIL_ENABLED =
-    !!(this.SMTP_HOST || this.SMTP_SERVICE || this.RESEND_API_KEY) ||
-    this.isDevelopment;
-
   /**
    * Resend API key for sending email via Resend's HTTP API instead of SMTP.
    * Use this when SMTP ports are blocked (e.g. on Railway Free/Hobby plans).
@@ -395,6 +390,11 @@ export class Environment {
   @IsOptional()
   @CannotUseWithAny(["SMTP_HOST", "SMTP_SERVICE"])
   public RESEND_API_KEY = this.toOptionalString(environment.RESEND_API_KEY);
+
+  @Public
+  public EMAIL_ENABLED =
+    !!(this.SMTP_HOST || this.SMTP_SERVICE || this.RESEND_API_KEY) ||
+    this.isDevelopment;
 
   /**
    * Optional hostname of the client, used for identifying to the server

@@ -384,7 +384,17 @@ export class Environment {
 
   @Public
   public EMAIL_ENABLED =
-    !!(this.SMTP_HOST || this.SMTP_SERVICE) || this.isDevelopment;
+    !!(this.SMTP_HOST || this.SMTP_SERVICE || this.RESEND_API_KEY) ||
+    this.isDevelopment;
+
+  /**
+   * Resend API key for sending email via Resend's HTTP API instead of SMTP.
+   * Use this when SMTP ports are blocked (e.g. on Railway Free/Hobby plans).
+   * Requires SMTP_FROM_EMAIL. Mutually exclusive with SMTP_HOST and SMTP_SERVICE.
+   */
+  @IsOptional()
+  @CannotUseWithAny(["SMTP_HOST", "SMTP_SERVICE"])
+  public RESEND_API_KEY = this.toOptionalString(environment.RESEND_API_KEY);
 
   /**
    * Optional hostname of the client, used for identifying to the server

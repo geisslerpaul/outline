@@ -3,6 +3,7 @@ import type { Transporter } from "nodemailer";
 import nodemailer from "nodemailer";
 import type SMTPTransport from "nodemailer/lib/smtp-transport";
 import Oy from "oy-vey";
+import { ResendTransport } from "@documenso/nodemailer-resend";
 import env from "@server/env";
 import { InternalError } from "@server/errors";
 import Logger from "@server/logging/Logger";
@@ -35,7 +36,13 @@ export class Mailer {
   transporter: Transporter | undefined;
 
   constructor() {
-    if (env.SMTP_HOST || env.SMTP_SERVICE) {
+    if (env.RESEND_API_KEY) {
+      this.transporter = nodemailer.createTransport(
+        ResendTransport.makeTransport({
+          apiKey: env.RESEND_API_KEY,
+        })
+      );
+    } else if (env.SMTP_HOST || env.SMTP_SERVICE) {
       this.transporter = nodemailer.createTransport(this.getOptions());
     }
     if (useTestEmailService) {

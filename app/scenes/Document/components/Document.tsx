@@ -3,7 +3,7 @@ import debounce from "lodash/debounce";
 import isEqual from "lodash/isEqual";
 import { action, observable } from "mobx";
 import { observer } from "mobx-react";
-import { Node } from "prosemirror-model";
+import { Fragment, Node } from "prosemirror-model";
 import type { Selection } from "prosemirror-state";
 import { AllSelection, TextSelection } from "prosemirror-state";
 import * as React from "react";
@@ -36,6 +36,7 @@ import RegisterKeyDown from "~/components/RegisterKeyDown";
 import type { SidebarContextType } from "~/components/Sidebar/components/SidebarContext";
 import withStores from "~/components/withStores";
 import { MeasuredContainer } from "~/components/MeasuredContainer";
+import Button from "~/components/Button";
 import type { Editor as TEditor } from "~/editor";
 import type { Properties } from "~/types";
 import { client } from "~/utils/ApiClient";
@@ -228,6 +229,68 @@ class DocumentScene extends React.Component<Props> {
       history.replace(this.props.document.url, history.location.state);
     }
   };
+
+  @action.bound
+  handleInsertTldr() {
+    const { document, readOnly, abilities, t } = this.props;
+
+    if (readOnly) {
+      return;
+    }
+
+    if (!abilities.update) {
+      return;
+    }
+
+    if (!document.summary) {
+      return;
+    }
+
+    const editorRef = this.editor.current;
+
+    if (!editorRef) {
+      return;
+    }
+
+    const { view, schema } = editorRef;
+    const { state } = view;
+    const endPos = state.doc.content.size;
+    const paragraphType = schema.nodes.paragraph;
+    const headingType = schema.nodes.heading;
+
+    if (!paragraphType) {
+      const text = `\n\nTL;DR\n${document.summary}\n`;
+      const tr = state.tr.insertText(text, endPos);
+      view.dispatch(tr);
+      view.focus();
+      return;
+    }
+
+    const nodes = [];
+
+    if (headingType) {
+      nodes.push(
+        headingType.create(
+          { level: 3 },
+          schema.text("TL;DR")
+        )
+      );
+    } else {
+      nodes.push(paragraphType.create(null, schema.text("TL;DR")));
+    }
+
+    nodes.push(paragraphType.create(null, schema.text(document.summary)));
+
+    const fragment = Fragment.fromArray(nodes);
+    const transaction = state.tr.insert(endPos, fragment);
+
+    try {
+      view.dispatch(transaction);
+      view.focus();
+    } catch (error) {
+      toast.error(t("Unable to insert TL;DR into document"));
+    }
+  }
 
   onUndoRedo = (event: KeyboardEvent) => {
     if (isModKey(event)) {
@@ -588,6 +651,17 @@ class DocumentScene extends React.Component<Props> {
                         <TldrContainer>
                           <TldrTitle>TL;DR</TldrTitle>
                           <TldrBody>{document.summary}</TldrBody>
+                          {!readOnly && abilities.update && (
+                            <TldrActions>
+                              <Button
+                                small
+                                neutral
+                                onClick={this.handleInsertTldr}
+                              >
+                                {t("Agregar al documento")}
+                              </Button>
+                            </TldrActions>
+                          )}
                         </TldrContainer>
                       )}
 
@@ -734,6 +808,12 @@ const TldrBody = styled.p`
   font-size: 14px;
   line-height: 1.5;
   white-space: pre-wrap;
+`;
+
+const TldrActions = styled.div`
+  margin-top: 8px;
+  display: flex;
+  justify-content: flex-end;
 `;
 
 type EditorContainerProps = {

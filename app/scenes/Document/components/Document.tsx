@@ -254,13 +254,13 @@ class DocumentScene extends React.Component<Props> {
 
     const { view, schema } = editorRef;
     const { state } = view;
-    const endPos = state.doc.content.size;
+    const insertPos = 1;
     const paragraphType = schema.nodes.paragraph;
     const headingType = schema.nodes.heading;
 
     if (!paragraphType) {
       const text = `\n\nTL;DR\n${document.summary}\n`;
-      const tr = state.tr.insertText(text, endPos);
+      const tr = state.tr.insertText(text, insertPos);
       view.dispatch(tr);
       view.focus();
       return;
@@ -282,7 +282,7 @@ class DocumentScene extends React.Component<Props> {
     nodes.push(paragraphType.create(null, schema.text(document.summary)));
 
     const fragment = Fragment.fromArray(nodes);
-    const transaction = state.tr.insert(endPos, fragment);
+    const transaction = state.tr.insert(insertPos, fragment);
 
     try {
       view.dispatch(transaction);
